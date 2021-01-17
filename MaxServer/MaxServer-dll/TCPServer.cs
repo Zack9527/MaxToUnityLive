@@ -63,6 +63,15 @@ namespace MaxServer_dll
         private Thread sendThread;
         public readonly Socket socket;
         public int RecvDataBufferSize = 1024;
+        public Socket[] GetClients()
+        {
+            Socket[] clients = new Socket[Clients.Count];
+            for(int i= 0; i < Clients.Count; i++)
+            {
+                clients[i] = Clients[i].socket;
+            }
+            return clients;
+        }
         public TCPServer(int LocalPort)
         {
             IPEndPoint localPoint = new IPEndPoint(IPAddress.Any, LocalPort);
@@ -101,10 +110,8 @@ namespace MaxServer_dll
         {
             sendQueue.Enqueue(message);
         }
-        public void SendString(Socket client,string message)
+        public void Send(Socket client,string message)
         {
-            Console.WriteLine(client);
-            Console.WriteLine(message);
             TCPMessage msg = new TCPMessage(socket, client, message);
             Send(msg);
         }
