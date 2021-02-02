@@ -240,6 +240,10 @@ namespace MaxServer_dll
 
             //还原原始的TcpListner对象
             Server = (TcpListener)ar.AsyncState;
+            if (Server == null)
+            {
+                return;
+            }
             //完成连接的动作，并返回新的TcpClient  
             TcpClient client = Server.EndAcceptTcpClient(ar);
             TcpClientInfo internalClient = new TcpClientInfo(client, RecvDataBufferSize);
@@ -260,10 +264,11 @@ namespace MaxServer_dll
                 return;
 
             TcpClientInfo internalClient = (TcpClientInfo)ar.AsyncState;
-            NetworkStream networkStream = internalClient.client.GetStream();
+            NetworkStream networkStream;
             int read = 0;
             try
             {
+                networkStream = internalClient.client.GetStream();
                 read = networkStream.EndRead(ar);
             }
             catch
@@ -313,13 +318,16 @@ namespace MaxServer_dll
         /// </summary>
         public void Stop()
         {
-            //停止监听
-            Server.Stop();
 
-            //停止监听、接收和发送
             stopListeing = true;
             stopRecieve = true;
             stopSend = true;
+
+            //停止监听
+            Server.Stop();
+
+            
+            
 
             //断开所有连接
             CloseAll();

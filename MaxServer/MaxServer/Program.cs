@@ -7,6 +7,8 @@ namespace MaxServer
     {
         static void Main(string[] args)
         {
+            JsonBuilder jb = JsonHelper.CreateJsonObjectBuilder();
+            //jb
             Server server = new Server();
             server.Start();
             Console.ReadLine();

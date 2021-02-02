@@ -8,7 +8,7 @@ namespace MaxServer_dll
     {
         public int ServerPort = 7896;
         private TCPServer server;
-        private List<LiveClientSide> clients;
+        public List<LiveClientSide> clients;
         public void Start()
         {
             server = new TCPServer(ServerPort);
@@ -52,6 +52,35 @@ namespace MaxServer_dll
             }
             return null;
         }
+
+        public LiveClientSide GetClientByPort(string ip,int port)
+        {
+            LiveClientSide client = null;
+            foreach(LiveClientSide ls in clients)
+            {
+                if (ls.IP == ip && ls.Port == port)
+                {
+                    client = ls;
+                    break;
+                }
+                   
+            }
+            return client;
+        }
+
+        public LiveClientSide GetClientBySocket(Socket socket)
+        {
+            LiveClientSide client = null;
+            foreach (LiveClientSide ls in clients)
+            {
+                if (ls.Client == socket)
+                {
+                    client = ls;
+                    break;
+                }
+            }
+            return client;
+        }
         public void Stop()
         {
             server.OnConnnectServer -= onClinetConnent;
@@ -67,17 +96,56 @@ namespace MaxServer_dll
             TCPMessage tcpMsg = server.GetMessage();
             if (tcpMsg == null)
                 return;
-            Console.WriteLine(string.Format("{0}:{1}说:{2}", tcpMsg.SrcIP, tcpMsg.SrcPort, tcpMsg.Message));
+            string msgStr = tcpMsg.Message;
+            Debug.Log(msgStr);
+            try
+            {
+                Dictionary<string, string> form = JsonHelper.Deserialize<Dictionary<string, string>>(msgStr);
+                if(form == null || form.Count == 0){
+                    Debug.Log("收到无效消息");
+                }
+                MessageHandler handler = HandlerFactory.Produce(form, tcpMsg.SourcePoint, this);
+                handler.Handle();
+            }
+            catch (Exception e)
+            {
+                Debug.Error(e.Message);
+            }
+        }
+
+        public void Send(string msg,Socket client)
+        {
+            server.Send(client, msg);
+        }
+        public void Send(string msg,string clientID)
+        {
+            LiveClientSide Client = GetClientByID(clientID);
+            if(Client == null)
+            {
+                Debug.Error(string.Format("指定的客户端ID不存在:{0}", clientID));
+                return;
+            }
+            Send(msg, Client.Client);
+        }
+
+        public void SendToLabel(string msg,string label)
+        {
+            foreach(LiveClientSide client in clients)
+            {
+                if (client.Label == label)
+                    Send(msg, client.Client);
+            }
         }
 
         private void onClinetDisConnent(Socket client)
         {
-            Console.WriteLine("客户端建立连接,现在连接数:" + server.GetClients().Length);
+            RemoveClient(client);
+            Console.WriteLine("客户端断开连接,现在连接数:" + server.GetClients().Length);
         }
 
         private void onClinetConnent(Socket client)
         {
-            Console.WriteLine("客户端断开连接,现在连接数:" + server.GetClients().Length);
+            Console.WriteLine("客户端建立连接,现在连接数:" + server.GetClients().Length);
         }
     }
 }
